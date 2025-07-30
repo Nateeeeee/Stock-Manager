@@ -44,7 +44,7 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Contagens Salvas')),
+      appBar: AppBar(title: const Text("Contagens Salvas")),
       body: ListView.builder(
         itemCount: keys.length,
         itemBuilder: (context, index) {
@@ -55,7 +55,7 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
           final mapData = data as Map;
           final nomeTemplate = mapData['templateNome'] ?? mapData['templateId'];
           final dataContagem = mapData['data'] ?? '';
-          final produtos = (mapData['contagem'] as Map).keys.join(', ');
+          final produtos = (mapData["contagem"] as Map? ?? {}).keys.join(", ");
           return ListTile(
             title: Text('Contagem: $nomeTemplate'),
             subtitle: Text('Data: $dataContagem\nProdutos: $produtos'),
@@ -102,8 +102,35 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
               );
             },
             onLongPress: () async {
-              await contagensBox.delete(key);
-              setState(() {});
+              final bool confirm = await showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Confirmar Exclusão"),
+                    content: const Text("Tem certeza que deseja apagar esta contagem?"),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text("Cancelar"),
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                      TextButton(
+                        child: const Text("Apagar"),
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ],
+                  );
+                },
+              ) ?? false;
+
+              if (confirm) {
+                await contagensBox.delete(key);
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Contagem apagada com sucesso!"),
+                  ),
+                );
+              }
             },
           );
         },
