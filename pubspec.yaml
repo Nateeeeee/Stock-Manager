@@ -48,6 +48,9 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.0.15
+  excel: ^2.1.0
+  pdf: ^3.10.8
+  open_filex: ^4.3.2
 
 dev_dependencies:
   flutter_test:

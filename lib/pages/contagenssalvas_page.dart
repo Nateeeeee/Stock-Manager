@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'contagem_page.dart';
 import '../models/template_contagem.dart';
+import '../models/contagem_real.dart';
+import '../services/export_service.dart';
 
 class ContagensSalvasPage extends StatefulWidget {
   const ContagensSalvasPage({super.key});
@@ -14,6 +16,7 @@ class ContagensSalvasPage extends StatefulWidget {
 
 class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
   late Box contagensBox;
+  final ExportService _exportService = ExportService();
 
   @override
   void initState() {
@@ -44,7 +47,45 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Contagens Salvas")),
+      appBar: AppBar(
+        title: const Text("Contagens Salvas"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: "Exportar para PDF",
+            onPressed: () async {
+              final List<ContagemReal> contagens = contagensBox.values.map((e) => ContagemReal.fromMap(e as Map<String, dynamic>)).toList();
+              if (contagens.isNotEmpty) {
+                await _exportService.exportToPDF(contagens);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Contagens exportadas para PDF com sucesso!")),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Nenhuma contagem para exportar.")),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: "Exportar para XLSX",
+            onPressed: () async {
+              final List<ContagemReal> contagens = contagensBox.values.map((e) => ContagemReal.fromMap(e as Map<String, dynamic>)).toList();
+              if (contagens.isNotEmpty) {
+                await _exportService.exportToXLSX(contagens);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Contagens exportadas para XLSX com sucesso!")),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Nenhuma contagem para exportar.")),
+                );
+              }
+            },
+          ),
+        ],
+      ),
       body: ListView.builder(
         itemCount: keys.length,
         itemBuilder: (context, index) {
@@ -89,11 +130,11 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
                     templateId: mapData['templateId'],
                     templateNome: mapData['templateNome'],
                     itens: itens,
-                    contagemInicial: Map<String, Map<String, int>>.from(
-                      (mapData['contagem'] as Map).map(
+                    contagemInicial: Map<String, Map<String, num>>.from(
+                      (mapData["contagem"] as Map).map(
                         (k, v) => MapEntry(
                           k as String,
-                          Map<String, int>.from(v as Map),
+                          Map<String, num>.from(v as Map),
                         ),
                       ),
                     ),
@@ -102,35 +143,8 @@ class _ContagensSalvasPageState extends State<ContagensSalvasPage> {
               );
             },
             onLongPress: () async {
-              final bool confirm = await showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text("Confirmar Exclusão"),
-                    content: const Text("Tem certeza que deseja apagar esta contagem?"),
-                    actions: <Widget>[
-                      TextButton(
-                        child: const Text("Cancelar"),
-                        onPressed: () => Navigator.of(context).pop(false),
-                      ),
-                      TextButton(
-                        child: const Text("Apagar"),
-                        onPressed: () => Navigator.of(context).pop(true),
-                      ),
-                    ],
-                  );
-                },
-              ) ?? false;
-
-              if (confirm) {
-                await contagensBox.delete(key);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Contagem apagada com sucesso!"),
-                  ),
-                );
-              }
+              await contagensBox.delete(key);
+              setState(() {});
             },
           );
         },
